@@ -8,6 +8,6 @@ data class ExcelObject(
         @GeneratedValue(strategy = GenerationType.AUTO)
         val id: Long = 0,
         @Column(columnDefinition = "TEXT")
-        val jsonObjects: String,
+        val jsonObject: String,
         val fileName: String
 )
