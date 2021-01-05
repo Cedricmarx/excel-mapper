@@ -1,68 +1,70 @@
 package nl.opinity.excelmapper.service
 
 import com.google.gson.GsonBuilder
-import lombok.extern.log4j.Log4j2
 import nl.opinity.excelmapper.exception.ExcelException
 import nl.opinity.excelmapper.model.ExcelObject
 import nl.opinity.excelmapper.repository.ExcelRepository
+import org.apache.logging.log4j.LogManager
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.DateUtil
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.util.StringUtils
 import org.springframework.web.multipart.MultipartFile
 
 @Service
-@Log4j2
 class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = LogManager.getLogger(javaClass)
 
     override fun convertXlsxToObject(file: MultipartFile): String {
         val fileName: String = StringUtils.cleanPath(file.originalFilename.orEmpty())
-        val fileExtension = fileName.split('.')[1].toLowerCase()
 
-        log.info("Validating file..")
-        if ("xlsx" != fileExtension) {
-            throw ExcelException("Not a valid Excel extension: {${fileExtension}}")
-        }
+        log.info("Validating excel file..")
+        if ("xlsx" != fileName.split('.')[1].toLowerCase())
+            throw ExcelException("$fileName doesn't have a valid excel extension!")
+        if (!fileName.matches(Regex("^[\\w\\-. ]+$")))
+            throw ExcelException("$fileName contains invalid path sequence!")
+        log.debug("$fileName is a valid excel file!")
 
-        if (!fileName.matches(Regex("^[\\w\\-. ]+$"))) {
-            throw ExcelException("Filename contains invalid path sequence: {$fileName}")
-        }
-
-        log.debug("File $fileName is a valid file!")
-        log.info("Converting to object..")
-
+        log.info("Reading $fileName..")
         val workbook = XSSFWorkbook(file.inputStream)
         val sheet = workbook.getSheetAt(1)
         val iterator = sheet.iterator()
 
-        val headers = getHeadersFromSheet(iterator)
+        val headers = getHeadersFromSheet(iterator, fileName)
         val map = mapHeadersToSheetValues(iterator, headers)
+        return convertToJsonAndStore(map, fileName)
+    }
 
+    private fun convertToJsonAndStore(map: MutableMap<Long, MutableMap<String, Any>>, fileName: String): String {
+        log.debug("Converting mapped objects to JSON..")
         val gson = GsonBuilder().setPrettyPrinting().create()
         val jsonString = gson.toJson(map)
-        excelRepository.save(ExcelObject(jsonObjects = jsonString, fileName = fileName))
+        val excelObject = excelRepository.save(ExcelObject(jsonObjects = jsonString, fileName = fileName))
+        log.debug("Returned mapped excel object: $excelObject")
         return jsonString
     }
 
-    fun getHeadersFromSheet(iterator: MutableIterator<Row>): MutableList<String> {
+    private fun getHeadersFromSheet(iterator: MutableIterator<Row>, fileName: String): MutableList<String> {
         val headers: MutableList<String> = ArrayList()
         val row = iterator.next()
         val cellIterator = row.cellIterator()
+
+        if (!cellIterator.hasNext()) throw ExcelException("No headers found in $fileName!")
 
         while (cellIterator.hasNext()) {
             val cell = cellIterator.next()
             headers.add(cell.stringCellValue)
         }
+        log.debug("${headers.size} headers found in excel sheet: $headers")
         return headers
     }
 
-    fun mapHeadersToSheetValues(iterator: MutableIterator<Row>, headers: MutableList<String>): MutableMap<Long, MutableMap<String, Any>> {
+    private fun mapHeadersToSheetValues(iterator: MutableIterator<Row>, headers: MutableList<String>): MutableMap<Long, MutableMap<String, Any>> {
+        log.info("Mapping cell values to headers..")
         val map: MutableMap<Long, MutableMap<String, Any>> = HashMap()
 
         while (iterator.hasNext()) {
@@ -79,12 +81,13 @@ class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
                     else -> println("CELL NOT SUPPORTED")
                 }
             }
+            log.debug("Object mapped at row ${nextRow.rowNum}: $tempMap")
             map[nextRow.rowNum.toLong()] = tempMap
         }
         return map
     }
 
-    fun getNumericCellValue(cell: Cell): Any {
+    private fun getNumericCellValue(cell: Cell): Any {
         if (DateUtil.isCellDateFormatted(cell)) {
             return cell.dateCellValue
         }
