@@ -27,22 +27,22 @@ class ExcelServiceTests {
     @Test
     fun convertToObjectAndStoreShouldThrowExceptionWhenFileHasWrongExtension() {
         val fileName = "SampleData"
-        val fileExtension = "docx"
-        val inputFile = FileInputStream("src/test/resources/$fileName.$fileExtension")
-        val file = MockMultipartFile("data", "$fileName.$fileExtension", "text/plain", inputFile)
+        val inputFile = FileInputStream("src/test/resources/$fileName.xlsx")
+        val file = MockMultipartFile("data", "$fileName.docx", "text/plain", inputFile)
 
         val exception = assertThrows<ExcelException> { excelService.convertToObjectAndStore(file) }
-        assertEquals("$fileName doesn't have a valid excel extension {$fileExtension}!", exception.message)
+        assertEquals("$fileName doesn't have a valid excel extension {docx}!", exception.message)
     }
 
     @Test
     fun convertToObjectAndStoreShouldThrowExceptionWhenFileHasInvalidPathSequence() {
-        val fileName = "SampleData\$%!=+:?.xlsx"
-        val inputFile = FileInputStream("src/test/resources/$fileName")
-        val file = MockMultipartFile("data", fileName, "text/plain", inputFile)
+        val fileName = "SampleData"
+        val inputFile = FileInputStream("src/test/resources/$fileName.xlsx")
+        val invalidFileName = fileName.plus("&%+?/.xlsx")
+        val file = MockMultipartFile("data", invalidFileName, "text/plain", inputFile)
 
         val exception = assertThrows<ExcelException> { excelService.convertToObjectAndStore(file) }
-        assertEquals("$fileName contains invalid path sequence!", exception.message)
+        assertEquals("$invalidFileName contains invalid path sequence!", exception.message)
     }
 
     @Test

@@ -41,7 +41,7 @@ class ExcelControllerTests {
 
     @Test
     fun uploadFileShouldReturn400WhenServiceThrowsExcelException() {
-        val inputFile = FileInputStream("src/test/resources/SampleData.docx")
+        val inputFile = FileInputStream("src/test/resources/SampleData.xlsx")
         val file = MockMultipartFile("data", "SampleData.docx", "text/plain", inputFile)
         whenever(excelService.convertToObjectAndStore(file)).thenThrow(ExcelException("SampleData doesn't have a valid excel extension {docx}"))
 
