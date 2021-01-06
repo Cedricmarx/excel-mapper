@@ -1,88 +1,42 @@
 package nl.opinity.excelmapper.service
 
-import com.google.gson.GsonBuilder
 import nl.opinity.excelmapper.exception.ExcelException
-import nl.opinity.excelmapper.model.ExcelObject
-import nl.opinity.excelmapper.repository.ExcelRepository
+import nl.opinity.excelmapper.util.ExcelMappingUtil
 import org.apache.logging.log4j.LogManager
-import org.apache.poi.ss.usermodel.Cell
-import org.apache.poi.ss.usermodel.CellType
-import org.apache.poi.ss.usermodel.DateUtil
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.springframework.stereotype.Service
 import org.springframework.util.StringUtils
 import org.springframework.web.multipart.MultipartFile
 
 @Service
-class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
+class ExcelServiceImpl(val mongoService: MongoService) : ExcelService {
 
     private val log = LogManager.getLogger(javaClass)
 
-    override fun convertXlsxToObject(file: MultipartFile): ExcelObject {
-        val fileName: String = StringUtils.cleanPath(file.originalFilename.orEmpty())
+    override fun convertToObjectAndStore(file: MultipartFile): List<Map<Any, Any>> {
+        log.info("Starting Excel document conversion..")
+        val supportedFileExtensions = arrayOf("xlsx", "xls")
 
-        log.info("Validating excel file..")
-        if ("xlsx" != fileName.split('.')[1].toLowerCase())
-            throw ExcelException("$fileName doesn't have a valid excel extension!")
-        if (!fileName.matches(Regex("^[\\w\\-. ]+$")))
-            throw ExcelException("$fileName contains invalid path sequence!")
-        log.debug("$fileName is a valid excel file!")
+        val completeFileName: String = StringUtils.cleanPath(file.originalFilename.orEmpty())
+        val completeFileNameList = completeFileName.split('.')
+        val fileName = completeFileNameList[0]
+        val fileExtension = completeFileNameList[1].toLowerCase()
 
-        log.info("Reading $fileName..")
-        val workbook = XSSFWorkbook(file.inputStream)
-        val sheet = workbook.getSheetAt(1)
+        if (!supportedFileExtensions.contains(fileExtension))
+            throw ExcelException("$fileName doesn't have a valid excel extension {$fileExtension}!")
+        if (!completeFileName.matches(Regex("^[\\w\\-. ]+$")))
+            throw ExcelException("$completeFileName contains invalid path sequence!")
+        log.debug("$completeFileName is a valid excel file!")
+
+        mongoService.dropCollectionIfExists(fileName)
+
+        val workbook = WorkbookFactory.create(file.inputStream)
+        val sheet = workbook.getSheetAt(0)
         val iterator = sheet.iterator()
 
-        val headers = getHeadersFromSheet(iterator, fileName)
-        val list = mapHeadersToSheetValues(iterator, headers)
-        return excelRepository.save(ExcelObject(jsonObject = list.joinToString(), fileName = fileName))
-    }
-
-    private fun getHeadersFromSheet(iterator: MutableIterator<Row>, fileName: String): MutableList<String> {
-        val headers: MutableList<String> = ArrayList()
-        val row = iterator.next()
-        val cellIterator = row.cellIterator()
-
-        if (!cellIterator.hasNext()) throw ExcelException("No headers found in $fileName!")
-
-        while (cellIterator.hasNext()) {
-            val cell = cellIterator.next()
-            headers.add(cell.stringCellValue)
-        }
-        log.debug("${headers.size} headers found in excel sheet: $headers")
-        return headers
-    }
-
-    private fun mapHeadersToSheetValues(iterator: MutableIterator<Row>, headers: MutableList<String>): MutableList<String> {
-        val list: MutableList<String> = ArrayList()
-
-        log.info("Mapping cell values to headers..")
-        while (iterator.hasNext()) {
-            val tempMap: MutableMap<String, Any> = HashMap()
-            val nextRow = iterator.next()
-            val cellIterator = nextRow.cellIterator()
-
-            while (cellIterator.hasNext()) {
-                val cell = cellIterator.next()
-                when (cell.cellType) {
-                    CellType.STRING -> tempMap[headers[cell.columnIndex]] = cell.stringCellValue
-                    CellType.BOOLEAN -> tempMap[headers[cell.columnIndex]] = cell.booleanCellValue
-                    CellType.NUMERIC -> tempMap[headers[cell.columnIndex]] = getNumericCellValue(cell)
-                    else -> println("CELL NOT SUPPORTED")
-                }
-            }
-            log.debug("Object mapped at row ${nextRow.rowNum}: $tempMap")
-            val gson = GsonBuilder().setPrettyPrinting().create()
-            list.add(gson.toJson(tempMap))
-        }
-        return list
-    }
-
-    private fun getNumericCellValue(cell: Cell): Any {
-        if (DateUtil.isCellDateFormatted(cell)) {
-            return cell.dateCellValue
-        }
-        return cell.numericCellValue
+        val headers = ExcelMappingUtil.mapHeaders(iterator, completeFileName, workbook)
+        val mappings = ExcelMappingUtil.mapValuesToHeaders(iterator, headers, workbook)
+        mongoService.saveAll(mappings, fileName)
+        return mappings
     }
 }
