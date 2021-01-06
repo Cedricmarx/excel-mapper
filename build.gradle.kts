@@ -39,7 +39,6 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${jacksonVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     implementation("org.apache.poi:poi-ooxml:4.1.2")
-    implementation("com.google.code.gson:gson:2.8.6")
     implementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:2.2.0")
     implementation("org.json:json:20201115")
     testImplementation("org.mockito:mockito-core:3.7.0")
