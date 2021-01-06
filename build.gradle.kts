@@ -41,6 +41,10 @@ dependencies {
     implementation("org.apache.poi:poi-ooxml:4.1.2")
     implementation("com.google.code.gson:gson:2.8.6")
     implementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:2.2.0")
+    implementation("org.json:json:20201115")
+    testImplementation("org.mockito:mockito-core:3.7.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.0")
+    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
 }
 
 tasks.withType<KotlinCompile> {
