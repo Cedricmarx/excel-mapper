@@ -31,6 +31,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}")
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:${springBootVersion}")
     implementation("io.springfox:springfox-boot-starter:${swaggerVersion}")
     implementation("io.springfox:springfox-swagger-ui:${swaggerVersion}")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
@@ -39,7 +40,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     implementation("org.apache.poi:poi-ooxml:4.1.2")
     implementation("com.google.code.gson:gson:2.8.6")
-    runtimeOnly("com.h2database:h2:1.4.200")
+    implementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:2.2.0")
 }
 
 tasks.withType<KotlinCompile> {
