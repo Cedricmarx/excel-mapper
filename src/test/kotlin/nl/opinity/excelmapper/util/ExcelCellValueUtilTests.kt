@@ -20,7 +20,7 @@ class ExcelCellValueUtilTests {
     @BeforeEach
     fun init() {
         workbook = WorkbookFactory.create(FileInputStream("src/test/resources/SampleData.xlsx"))
-        val row = workbook.getSheetAt(0).createRow(Random.nextInt())
+        val row = workbook.getSheetAt(0).createRow(Random.nextInt(1000, 2000))
         cell = row.createCell(0)
     }
 

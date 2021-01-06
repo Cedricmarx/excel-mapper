@@ -36,7 +36,6 @@ class ExcelServiceTests {
 
     @Test
     fun convertToObjectAndStoreShouldThrowExceptionWhenFileHasInvalidPathSequence() {
-        val inputFile = FileInputStream("src/test/resources/$testFile.xlsx")
         val invalidFileName = testFile.plus("&%+?/.xlsx")
         val file = MockMultipartFile("data", invalidFileName, "text/plain", inputFile)
 
@@ -46,7 +45,7 @@ class ExcelServiceTests {
 
     @Test
     fun convertToObjectAndStoreShouldPassWithValidExcelFile() {
-        val file = MockMultipartFile("data", testFile, "text/plain", inputFile)
+        val file = MockMultipartFile("data", "$testFile.xlsx", "text/plain", inputFile)
 
         val response = excelService.convertToObjectAndStore(file)
 
