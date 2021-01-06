@@ -14,6 +14,8 @@ import java.time.LocalDateTime
 class ExcelServiceTests {
 
     private lateinit var excelService: ExcelService
+    private val testFile = "SampleData"
+    private val inputFile = FileInputStream("src/test/resources/$testFile.xlsx")
 
     @Mock
     lateinit var mongoService: MongoService
@@ -26,19 +28,16 @@ class ExcelServiceTests {
 
     @Test
     fun convertToObjectAndStoreShouldThrowExceptionWhenFileHasWrongExtension() {
-        val fileName = "SampleData"
-        val inputFile = FileInputStream("src/test/resources/$fileName.xlsx")
-        val file = MockMultipartFile("data", "$fileName.docx", "text/plain", inputFile)
+        val file = MockMultipartFile("data", "$testFile.docx", "text/plain", inputFile)
 
         val exception = assertThrows<ExcelException> { excelService.convertToObjectAndStore(file) }
-        assertEquals("$fileName doesn't have a valid excel extension {docx}!", exception.message)
+        assertEquals("$testFile doesn't have a valid excel extension {docx}!", exception.message)
     }
 
     @Test
     fun convertToObjectAndStoreShouldThrowExceptionWhenFileHasInvalidPathSequence() {
-        val fileName = "SampleData"
-        val inputFile = FileInputStream("src/test/resources/$fileName.xlsx")
-        val invalidFileName = fileName.plus("&%+?/.xlsx")
+        val inputFile = FileInputStream("src/test/resources/$testFile.xlsx")
+        val invalidFileName = testFile.plus("&%+?/.xlsx")
         val file = MockMultipartFile("data", invalidFileName, "text/plain", inputFile)
 
         val exception = assertThrows<ExcelException> { excelService.convertToObjectAndStore(file) }
@@ -47,9 +46,7 @@ class ExcelServiceTests {
 
     @Test
     fun convertToObjectAndStoreShouldPassWithValidExcelFile() {
-        val fileName = "SampleData.xlsx"
-        val inputFile = FileInputStream("src/test/resources/$fileName")
-        val file = MockMultipartFile("data", fileName, "text/plain", inputFile)
+        val file = MockMultipartFile("data", testFile, "text/plain", inputFile)
 
         val response = excelService.convertToObjectAndStore(file)
 

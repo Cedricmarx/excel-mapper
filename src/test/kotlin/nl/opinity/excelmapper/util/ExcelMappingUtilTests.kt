@@ -44,6 +44,7 @@ class ExcelMappingUtilTests {
     fun mapValuesToHeadersShouldMapCellValuesToHeaders() {
         val sheet = workbook.getSheetAt(0)
         val iterator = sheet.iterator()
+
         val headers = ExcelMappingUtil.mapHeaders(iterator, "SampleData", workbook)
 
         val response = ExcelMappingUtil.mapValuesToHeaders(iterator, headers, workbook)

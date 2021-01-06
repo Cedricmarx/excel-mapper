@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.time.LocalDateTime
+import java.util.*
+import kotlin.random.Random
 
 
 class ExcelCellValueUtilTests {
@@ -18,13 +20,13 @@ class ExcelCellValueUtilTests {
     @BeforeEach
     fun init() {
         workbook = WorkbookFactory.create(FileInputStream("src/test/resources/SampleData.xlsx"))
-        val row = workbook.getSheetAt(0).createRow(999)
+        val row = workbook.getSheetAt(0).createRow(Random.nextInt())
         cell = row.createCell(0)
     }
 
     @Test
     fun getCellValueShouldReturnStringIfCellTypeIsString() {
-        cell.setCellValue("String")
+        cell.setCellValue(UUID.randomUUID().toString())
 
         val cellValue = ExcelCellValueUtil.getCellValue(cell, false, workbook)
 
@@ -33,7 +35,7 @@ class ExcelCellValueUtilTests {
 
     @Test
     fun getCellValueShouldReturnBooleanIfCellTypeIsBoolean() {
-        cell.setCellValue(true)
+        cell.setCellValue(Random.nextBoolean())
 
         val cellValue = ExcelCellValueUtil.getCellValue(cell, false, workbook)
 
@@ -42,7 +44,7 @@ class ExcelCellValueUtilTests {
 
     @Test
     fun getCellValueShouldReturnLocalDateIfCellTypeIsNumericAndDateFormatted() {
-        cell.setCellValue(LocalDateTime.of(2021, 1, 6, 0, 0))
+        cell.setCellValue(LocalDateTime.now())
 
         val style = workbook.createCellStyle()
         style.dataFormat = workbook.creationHelper.createDataFormat().getFormat("dd-mm-yyyy")
@@ -55,7 +57,7 @@ class ExcelCellValueUtilTests {
 
     @Test
     fun getCellValueShouldReturnNumericIfCellTypeIsNumericAndNotIsHeader() {
-        cell.setCellValue(1.0)
+        cell.setCellValue(Random.nextDouble())
 
         val cellValue = ExcelCellValueUtil.getCellValue(cell, false, workbook)
 
@@ -64,7 +66,7 @@ class ExcelCellValueUtilTests {
 
     @Test
     fun getCellValueShouldReturnIntIfCellTypeIsNumericAndIsHeader() {
-        cell.setCellValue(1.0)
+        cell.setCellValue(Random.nextDouble())
 
         val cellValue = ExcelCellValueUtil.getCellValue(cell, true, workbook)
 
