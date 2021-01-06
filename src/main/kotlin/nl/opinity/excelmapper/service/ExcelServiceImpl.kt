@@ -1,9 +1,9 @@
 package nl.opinity.excelmapper.service
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
 import nl.opinity.excelmapper.exception.ExcelException
-import nl.opinity.excelmapper.model.ExcelObject
-import nl.opinity.excelmapper.repository.ExcelRepository
+import nl.opinity.excelmapper.repository.JsonElementRepository
 import org.apache.logging.log4j.LogManager
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.CellType
@@ -15,11 +15,11 @@ import org.springframework.util.StringUtils
 import org.springframework.web.multipart.MultipartFile
 
 @Service
-class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
+class ExcelServiceImpl(val jsonElementRepository: JsonElementRepository) : ExcelService {
 
     private val log = LogManager.getLogger(javaClass)
 
-    override fun convertXlsxToObject(file: MultipartFile): ExcelObject {
+    override fun convertXlsxToObject(file: MultipartFile): MutableList<JsonElement> {
         val fileName: String = StringUtils.cleanPath(file.originalFilename.orEmpty())
 
         log.info("Validating excel file..")
@@ -36,7 +36,8 @@ class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
 
         val headers = getHeadersFromSheet(iterator, fileName)
         val list = mapHeadersToSheetValues(iterator, headers)
-        return excelRepository.save(ExcelObject(jsonObject = list.joinToString(), fileName = fileName))
+        jsonElementRepository.saveAll(list)
+        return list
     }
 
     private fun getHeadersFromSheet(iterator: MutableIterator<Row>, fileName: String): MutableList<String> {
@@ -54,8 +55,8 @@ class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
         return headers
     }
 
-    private fun mapHeadersToSheetValues(iterator: MutableIterator<Row>, headers: MutableList<String>): MutableList<String> {
-        val list: MutableList<String> = ArrayList()
+    private fun mapHeadersToSheetValues(iterator: MutableIterator<Row>, headers: MutableList<String>): MutableList<JsonElement> {
+        val list: MutableList<JsonElement> = ArrayList()
 
         log.info("Mapping cell values to headers..")
         while (iterator.hasNext()) {
@@ -74,7 +75,8 @@ class ExcelServiceImpl(val excelRepository: ExcelRepository) : ExcelService {
             }
             log.debug("Object mapped at row ${nextRow.rowNum}: $tempMap")
             val gson = GsonBuilder().setPrettyPrinting().create()
-            list.add(gson.toJson(tempMap))
+            val jsonElement = gson.toJsonTree(tempMap)
+            list.add(jsonElement)
         }
         return list
     }

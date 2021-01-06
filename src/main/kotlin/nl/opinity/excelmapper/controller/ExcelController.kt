@@ -26,8 +26,8 @@ class ExcelController(private val excelService: ExcelService) {
     fun uploadFile(@ApiParam("Excel document to convert to JSON")
                    @RequestParam("excel") excel: MultipartFile): ResponseEntity<Any> {
         return try {
-            val excelObject = excelService.convertXlsxToObject(excel)
-            ResponseEntity.ok().body(excelObject.jsonObject)
+            val jsonElementList = excelService.convertXlsxToObject(excel)
+            ResponseEntity.ok().body(Gson().toJson(jsonElementList))
         } catch (e: Throwable) {
             e.printStackTrace()
             ResponseEntity.badRequest().body(e.message)
